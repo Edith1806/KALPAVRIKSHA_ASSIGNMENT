@@ -1,170 +1,293 @@
 #include<stdio.h>
 #include<string.h>
 #include<stdbool.h>
+
 struct user
 {
     int id;
-    char name[50];
+    char name[30];
     int age;
 };
 
-struct user create_user()
+void clear_input_buffer()
 {
-    struct user u1;
-    printf("Enter id:");
-    scanf("%d%*c",&u1.id);
-    printf("Enter updated name:");
-    fgets(u1.name,sizeof(u1.name),stdin);
-    u1.name[strcspn(u1.name, "\n")] = '\0';
-    printf("Enter age: ");
-    scanf("%d",&u1.age);
-    return u1;
+    int character;
+    while((character = getchar()) != '\n' && character != EOF)
+    {
+    }
 }
 
-bool isEmpty(FILE *fp)
+bool getUserData(struct user *user)
 {
-    if(fp == NULL)
+    printf("Enter id:");
+    if(scanf("%d",&user->id) != 1)
     {
-        printf("File is not created yet....\n");
+        printf("Invalid Id\n");
+        return false;
+    };
+    if(user->id < 1 || user->id > 500)
+    {
+        printf("Invalid ID\n");
         return false;
     }
-    rewind(fp);
-    fseek(fp,0,SEEK_END);
-    long sz = ftell(fp);
-    return (sz == 0);
-}
-void create(FILE *fp)
-{
-    struct user u1 = create_user();
-    char line[50];
-    while(fgets(line,sizeof(line),fp) != NULL)
+    clear_input_buffer();
+    printf("Enter name:");
+    fgets(user->name,sizeof(user->name),stdin);
+    user->name[strcspn(user->name, "\n")] = '\0';
+    if(user->name[0] == '\0')
     {
-        int id;
-        sscanf(line,"%d",&id);
-        if(id == u1.id)
+        printf("Invalid user name\n");
+        return false;
+    }
+    printf("Enter age: ");
+    
+    if(scanf("%d",&user->age) != 1)
+    {
+        printf("Invalid Age\n");
+        return false;
+    }
+    if(user->age < 1 || user->age > 100)
+    {
+        printf("Invalid age\n");
+        return false;
+    }
+    clear_input_buffer();
+    return true;
+}
+
+bool is_file_empty(FILE *file_pointer)
+{
+    if(file_pointer == NULL)
+    {
+        printf("Unable to access file\n");
+        return true;
+    }
+    rewind(file_pointer);
+    fseek(file_pointer,0,SEEK_END);
+    long file_size = ftell(file_pointer);
+    return (file_size == 0);
+}
+
+
+void create_user(FILE *fp)
+{
+    struct user user;
+    if(!getUserData(&user))
+    {
+        return;
+    }
+    char current_line[50];
+    rewind(fp);
+    while(fgets(current_line,sizeof(current_line),fp) != NULL)
+    {
+        int current_id;
+        sscanf(current_line,"%d",&current_id);
+        if(current_id == user.id)
         {
             printf("ID already exists...\n");
             return;
         }
     }
-    fprintf(fp,"%d,%s,%d\n",u1.id,u1.name,u1.age);
+    fprintf(fp,"%d,%s,%d\n",user.id,user.name,user.age);
     printf("Creation successful\n");
 }
 
-void read(FILE *fp)
+void read_users(FILE *file)
 {
-    if(isEmpty(fp))
+    if(is_file_empty(file))
     {
         printf("No data to read\n");
         return;
     }
-    rewind(fp);
-    char ch[50];
-    while(fgets(ch,sizeof(ch),fp) != NULL)
+    rewind(file);
+    char current_line[50];
+    while(fgets(current_line,sizeof(current_line),file) != NULL)
     {
-        printf("%s",ch);
+        char current_name[30];
+        int current_id, current_age;
+        sscanf(current_line, "%d,%[^,],%d",&current_id, current_name, &current_age);
+        printf("----------------------------------------------------------\n");
+        printf("User ID : %d\nUser name : %s\nUser age : %d\n",current_id,current_name,current_age);
     }
 }
 
-FILE * update(FILE *fp)
+FILE * update_user_details(FILE *fp)
 {
-    if(isEmpty(fp))
+    if(is_file_empty(fp))
     {
         printf("File empty.Nothing to update..\n");
         return NULL;
     }
     rewind(fp);
-    FILE *t = fopen("temp.txt","w");
-    struct user u1 = create_user();
-    char line[50];
-    int id;
-    bool found = false;
-    while(fgets(line,sizeof(line),fp) != NULL)
+    struct user user;
+    if(!getUserData(&user))
+        return NULL;
+    FILE *temp_file = fopen("temp.txt","w");
+    if(temp_file == NULL)
     {
-        sscanf(line,"%d",&id);
-        if(id == u1.id)
+        printf("Unable to open file");
+        return NULL;
+    }
+    char current_line[50];
+    int current_id;
+    bool found_user = false;
+    while(fgets(current_line,sizeof(current_line),fp) != NULL)
+    {
+        if(sscanf(current_line,"%d",&current_id) != 1)
         {
-            fprintf(t,"%d,%s,%d\n",u1.id,u1.name,u1.age);
+            printf("Malformed record\n");
+            return NULL;
+        }
+        if(current_id == user.id)
+        {
+            fprintf(temp_file,"%d,%s,%d\n",user.id,user.name,user.age);
             printf("Update successful\n");
-            found = true;
+            found_user = true;
         }
         else
         {
-            fprintf(t,"%s",line);
+            fprintf(temp_file,"%s",current_line);
         }
     }
-    if(!found)
+    if(!found_user)
     {
         printf("ID not found...\n");
     }
     fclose(fp);
-    fclose(t);
+    fclose(temp_file);
     remove("users.txt");
     rename("temp.txt","users.txt");
-    FILE *f = fopen("users.txt","a+");
-    return f;
+    FILE *new_file_pointer = fopen("users.txt","a+");
+    return new_file_pointer;
 }
 
-FILE * delete(FILE *fp)
+FILE * delete_user(FILE *fp)
 {
-    if(isEmpty(fp))
+    if(is_file_empty(fp))
     {
         printf("File empty.There is no data to delete...\n");
         return NULL;
     }
      rewind(fp); 
-    char line[50];
-    int id,x;
-
+    char current_line[50];
+    int current_id, delete_id;
     printf("Enter the user id: ");
-    scanf("%d",&x);
-    FILE *t = fopen("temp.txt","w");
-   bool found = false;
-    while(fgets(line,sizeof(line),fp) != NULL)
+    if(scanf("%d",&delete_id) != 1)
     {
-        sscanf(line,"%d",&id);
-        if(id == x)
+        printf("Invalid Input\n");
+        return NULL;
+    }
+    clear_input_buffer();
+    if(delete_id < 1 || delete_id > 500)
+    {
+        printf("Invalid ID\n");
+        return NULL;
+    }
+    FILE *temp_file = fopen("temp.txt","w");
+    if(temp_file == NULL)
+    {
+        printf("Unable to open file");
+        return NULL;
+    }
+    bool found_id = false;
+    while(fgets(current_line,sizeof(current_line),fp) != NULL)
+    {
+        if(sscanf(current_line,"%d",&current_id) != 1)
         {
-            found = true;
+            printf("Malformed record.\n");
+            return NULL;
+        }
+        if(current_id == delete_id)
+        {
+            found_id = true;
             printf("Deletion successful\n");
             continue;
         }
-        fprintf(t,"%s",line);
+        fprintf(temp_file,"%s",current_line);
     }
-    if(!found)
+    if(!found_id)
     {
         printf("ID not found to delete...\n");
     }
-    fclose(t);
+    fclose(temp_file);
     fclose(fp);
     remove("users.txt");
     rename("temp.txt","users.txt");
-    FILE *f = fopen("users.txt","a+");
-    return f;
+    FILE *new_file_pointer = fopen("users.txt","a+");
+    return new_file_pointer;
 }
+
+
 void menu()
 {
     printf("\n1.Create\n2.Read\n3.Update\n4.Delete\n5.Exit");
     printf("\nEnter your option: ");
 }
+
+
 int main()
 {
-    FILE *fp = fopen("users.txt","a+");
-    int x;
+    FILE *file_pointer = fopen("users.txt","a+");
+    if(file_pointer == NULL)
+    {
+        printf("File cannot be opened!");
+        return 0;
+    }
+    FILE *temporary_pointer;
+    int choice;
     while(true)
     {
         menu();
-        scanf("%d",&x);
-        switch(x)
+        if(scanf("%d",&choice) != 1)
         {
-            case 1:create(fp);break;
-            case 2:read(fp);break;
-            case 3:fp = update(fp);break;
-            case 4:fp = delete(fp);break;
-            case 5:printf("Exited...\n");return 0;
+            printf("Invalid choice\n");
+            clear_input_buffer();
+            continue;
+        }
+        bool user_exit = false;
+        switch(choice)
+        {
+            case 1:create_user(file_pointer);break;
+            case 2:read_users(file_pointer);break;
+            case 3:
+            {
+                temporary_pointer = update_user_details(file_pointer);
+                if(temporary_pointer == NULL)
+                {
+                    printf("Udate unsuccessful!!!\n");
+                }
+                else
+                {
+                    file_pointer = temporary_pointer;
+                }
+                break;
+            }
+            case 4:
+            {
+                temporary_pointer = delete_user(file_pointer);
+                if(temporary_pointer == NULL)
+                {
+                    printf("Delete Unsuccessful!!!\n");
+                }
+                else
+                {
+                    file_pointer = temporary_pointer;
+                }
+                break;
+            }
+            case 5:
+            {
+                printf("Exited...\n");
+                user_exit = true;
+                break;
+            }
             default:printf("Invalid input\n");
         }
+        temporary_pointer = NULL;
+        if(user_exit)
+            break;
     }
-    fclose(fp);
+
+    fclose(file_pointer);
     return 0;
 }
