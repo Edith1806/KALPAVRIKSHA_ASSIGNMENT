@@ -4,15 +4,6 @@
 #include<math.h>
 
 #define MAX_SIZE 100
-
-//add_students()
-//getstudentdata()
-//calculate_tot()
-//calc_avg()
-//assign_grade()
-//print_pattern()
-//print_output()
-//recusive_roll_no()
 struct Student
 {
     int roll_no;
@@ -38,7 +29,7 @@ bool get_student_data(struct Student *student)
         return false;
     }
     clear_input_buffer();
-    if(student -> roll_no < 1 || student -> roll_no > 100)
+    if(student -> roll_no < 1 || student -> roll_no > MAX_SIZE)
     {
         printf("Invalid Roll no\n");
         clear_input_buffer();
