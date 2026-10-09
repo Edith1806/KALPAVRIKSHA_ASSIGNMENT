@@ -224,7 +224,58 @@ void menu()
     printf("\nEnter your option: ");
 }
 
+int get_choice()
+{
+    int choice;
+    menu();
+     if(scanf("%d",&choice) != 1)
+    {
+        printf("Invalid choice\n");
+        clear_input_buffer();
+        return -1;
+    }
+    return choice;
+}
 
+bool process_choice(FILE **file_pointer, int choice)
+{
+    FILE *temporary_file = NULL;
+    switch(choice)
+    {
+        case 1 : 
+            create_user(*file_pointer);
+            break;
+        case 2 : 
+            read_users(*file_pointer);
+            break;
+        case 3 :
+            temporary_file = update_user_details(*file_pointer);
+            if(temporary_file == NULL)
+            {
+                printf("Update unsucessful!\n");
+            }
+            else{
+                *file_pointer = temporary_file;
+            }
+            break;
+        case 4 :
+            temporary_file = delete_user(*file_pointer);
+            if(temporary_file == NULL)
+            {
+                printf("Delete unsucessful!\n");
+            }
+            else{
+                *file_pointer = temporary_file;
+            }
+            break;
+        case 5 :
+            printf("Exited\n");
+            return true;
+        default :
+            printf("Invalid Input\n");
+    }
+    return false;
+}
 int main()
 {
     FILE *file_pointer = fopen("users.txt","a+");
@@ -233,61 +284,16 @@ int main()
         printf("File cannot be opened!");
         return 0;
     }
-    FILE *temporary_pointer;
     int choice;
     while(true)
     {
-        menu();
-        if(scanf("%d",&choice) != 1)
-        {
-            printf("Invalid choice\n");
-            clear_input_buffer();
+        choice = get_choice();
+        if(choice == -1)
             continue;
-        }
-        bool user_exit = false;
-        switch(choice)
-        {
-            case 1:create_user(file_pointer);break;
-            case 2:read_users(file_pointer);break;
-            case 3:
-            {
-                temporary_pointer = update_user_details(file_pointer);
-                if(temporary_pointer == NULL)
-                {
-                    printf("Udate unsuccessful!!!\n");
-                }
-                else
-                {
-                    file_pointer = temporary_pointer;
-                }
-                break;
-            }
-            case 4:
-            {
-                temporary_pointer = delete_user(file_pointer);
-                if(temporary_pointer == NULL)
-                {
-                    printf("Delete Unsuccessful!!!\n");
-                }
-                else
-                {
-                    file_pointer = temporary_pointer;
-                }
-                break;
-            }
-            case 5:
-            {
-                printf("Exited...\n");
-                user_exit = true;
-                break;
-            }
-            default:printf("Invalid input\n");
-        }
-        temporary_pointer = NULL;
-        if(user_exit)
+        bool should_exit = process_choice(&file_pointer, choice);
+        if(should_exit)
             break;
     }
-
     fclose(file_pointer);
     return 0;
 }
