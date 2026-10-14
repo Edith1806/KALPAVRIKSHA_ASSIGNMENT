@@ -1,9 +1,12 @@
 #include<stdio.h>
 #include<string.h>
 #include<stdbool.h>
-#include<math.h>
-
+#include<stdlib.h>
+#include<ctype.h>
 #define MAX_SIZE 100
+
+int no_of_students;
+
 struct Student
 {
     int roll_no;
@@ -21,63 +24,91 @@ void clear_input_buffer()
 
 bool get_student_data(struct Student *student)
 {
-    printf("Enter roll no: ");
-    if(scanf("%d", &(student->roll_no)) != 1)
+    printf("Enter students detail in single line eg:Roll_no name mark1 mark2 mark3: ");
+    char input[200];
+    fgets(input,sizeof(input),stdin);
+    input[strcspn(input, "\n")] = '\0';
+    char *end;
+    student->roll_no = strtol(input, &end, 10);
+    while(isspace((unsigned char) *end))
     {
-        printf("Invalid Input\n");
-        clear_input_buffer();
+        end++;
+    }
+    int loop_count = 3;
+    while(loop_count > 0)
+    {
+    char *space_pointer = strrchr(input,' ');
+    if(space_pointer == NULL)
+    {
+        printf("Invalid input format.\n");
         return false;
     }
-    clear_input_buffer();
-    if(student -> roll_no < 1 || student -> roll_no > MAX_SIZE)
+    char *mark_start = space_pointer + 1;
+    char *mark_end;
+
+    long mark = strtol(mark_start, &mark_end, 10);
+    if(mark < 0 || mark > 100)
     {
-        printf("Invalid Roll no\n");
-        clear_input_buffer();
+        printf("Mark must be between 0 to 100\n");
         return false;
     }
-    printf("Enter the name : ");
-    fgets(student -> name, sizeof(student -> name), stdin);
-    student -> name[strcspn(student -> name, "\n")] = '\0';
-    if(student -> name[0] == '\0')
+    student->subjects_mark[loop_count - 1] = (int)mark;
+    *space_pointer = '\0';
+     loop_count--;
+    }   
+    
+    char *name_start = end;
+    while(isspace((unsigned char) *name_start))
     {
-        printf("Name cannot be empty.");
-        clear_input_buffer();
+        name_start++;
+    }
+
+    size_t name_length = strlen(name_start);
+    if(name_length == 0 || name_length >= sizeof(student-> name))
+    {
+        printf("Name cannot be empty or too long\n");
         return false;
     }
-    printf("Enter 3 subject marks with spaces (e.g: mark1 mark2 mark3): ");
-    if(scanf("%d %d %d", &(student -> subjects_mark[0]), &(student -> subjects_mark[1]), &(student -> subjects_mark[2])) != 3)
+    strcpy(student->name, name_start);
+    if(student->roll_no < 1)
     {
-        printf("invalid no of marks/ Invalid mark");
-        clear_input_buffer();
+        printf("Roll number must be greater than 0.\n");
         return false;
     }
-    for(int idx = 0; idx < 3; idx++)
+    return true;
+}
+
+bool check_uniquness_of_students(struct Student students[], int check_student_index)
+{
+    if(check_student_index == 0)
     {
-        if(student->subjects_mark[idx] < 0 || student->subjects_mark[idx] > 100)
+        return true;
+    }
+    for(int current_index = 0; current_index < check_student_index; current_index++)
+    {
+        if(students[current_index].roll_no == students[check_student_index].roll_no)
         {
-            printf("Invalid mark!");
-            clear_input_buffer();
+            printf("Roll number should be unique for each student\n");
             return false;
         }
     }
     return true;
 }
 
-bool add_students(struct Student students[], int no_of_students)
+void add_students(struct Student students[])
 {
-    for(int current_roll_no = 1; current_roll_no <= no_of_students; current_roll_no++)
+    for(int idx = 0; idx < no_of_students; idx++)
     {
-        if(!get_student_data(&students[current_roll_no - 1]))
+        while(true)
         {
-            return false;
-        }
-        if(students[current_roll_no - 1] . roll_no != current_roll_no)
-        {
-            printf("Roll number mismatch!");
-            return false;
-        }
+            if(!get_student_data(&students[idx]))
+                continue;
+            if(!check_uniquness_of_students(students, idx))
+                continue;
+            break;
+        }      
     }
-    return true;
+    printf("Students detail added successfully.\n");
 }
 
 int find_total_mark(struct Student student)
@@ -95,7 +126,7 @@ float find_average_mark(float total_mark)
     return total_mark / 3;
 }
 
-char find_grade(int average_mark)
+char find_grade(float average_mark)
 {
     if(average_mark >= 85)
         return 'A';
@@ -108,7 +139,7 @@ char find_grade(int average_mark)
     return 'F';
 }
 
-void get_performance_star(char grade)
+void print_performance_star(char grade)
 {
     switch(grade)
     {
@@ -119,26 +150,26 @@ void get_performance_star(char grade)
     }
 }
 
-void get_students_roll_no(struct Student students[],int no_of_students)
+void print_students_roll_no(struct Student students[],int no_of_students)
 {
     if(no_of_students == 0)
         return;
-    get_students_roll_no(students, no_of_students - 1);
+    print_students_roll_no(students, no_of_students - 1);
     printf("%d ",students[no_of_students - 1].roll_no);
 }
 
-void get_students_analysis(struct Student students[], int no_of_students)
+void print_students_analysis(struct Student students[], int no_of_students)
 {
     for(int current_student_idx = 0; current_student_idx < no_of_students; current_student_idx++)
     {
-        int currect_student_total = find_total_mark(students[current_student_idx]);
-        float current_student_average = find_average_mark((float)currect_student_total);
-        char current_student_grade = find_grade(round(current_student_average));
+        int current_student_total = find_total_mark(students[current_student_idx]);
+        float current_student_average = find_average_mark((float)current_student_total);
+        char current_student_grade = find_grade(current_student_average);
 
         printf("-----------------------------------------------------------------------\n");
         printf("Roll : %d\n", students[current_student_idx].roll_no);
         printf("Name : %s\n", students[current_student_idx].name);
-        printf("Total : %d\n", currect_student_total);
+        printf("Total : %d\n", current_student_total);
         printf("Average : %.2f\n", current_student_average);
         printf("Grade : %c\n", current_student_grade);
         if(current_student_grade == 'F')
@@ -146,13 +177,12 @@ void get_students_analysis(struct Student students[], int no_of_students)
             continue;
         }
         printf("Performance: ");
-        get_performance_star(current_student_grade);
+        print_performance_star(current_student_grade);
     }
 }
 
 int get_no_of_students()
 {
-    int no_of_students;
     printf("Enter no of students : ");
     if(scanf("%d", &no_of_students) != 1)
     {
@@ -171,21 +201,21 @@ int get_no_of_students()
 }
 
 
-int main()
+int main(void)
 {
-    int no_of_students = get_no_of_students();
-    if(no_of_students == 0)
+    no_of_students = get_no_of_students();
+    while(no_of_students == 0)
     {
-        return 0;
+        printf("Number of students must be greater than 0 and less than 100\n");
+        no_of_students = get_no_of_students();
     }
+    clear_input_buffer();
     struct Student students[no_of_students];
-    if(!add_students(students, no_of_students))
-    {
-        printf("Add student unsuccessful!");
-        return 0;
-    }
+    add_students(students);
 
-    get_students_analysis(students, no_of_students);
+    print_students_analysis(students, no_of_students);
     printf("List of Roll Numbers (via recursion): ");
-    get_students_roll_no(students, no_of_students);
+    print_students_roll_no(students, no_of_students);
+
+    return 0;
 }
