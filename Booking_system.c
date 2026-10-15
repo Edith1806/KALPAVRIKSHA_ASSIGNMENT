@@ -7,11 +7,18 @@ const int standard_ticket_price = 150;
 const int premium_ticket_price = 250;
 const int recliner_ticket_price = 400;
 
+enum TicketCategory
+{
+    STANDARD = 1,
+    PREMIUM,
+    RECLINER
+};
+
 struct Booking
 {
     char name[30];
     int ticket_count;
-    int ticket_category;
+    enum TicketCategory ticket_category;
     int subtotal;
     float discount_amount;
     float final_bill;
@@ -67,8 +74,9 @@ bool booking_counter(struct Booking *booking_details)
         clear_input_buffer();
         return false;
     } 
+    int category_choice;
     printf("Enter the ticket category: ");
-    if(scanf("%d",&booking_details->ticket_category) != 1)
+    if(scanf("%d",&category_choice) != 1)
     {
         printf("Ticket category must be a valid number\n");
         clear_input_buffer();
@@ -80,11 +88,12 @@ bool booking_counter(struct Booking *booking_details)
         printf("Error: Ticket count must be between 1 to 20\n");
         return false;
     }
-    if(booking_details->ticket_category < 1 || booking_details->ticket_category > 3)
+    if(category_choice < STANDARD || category_choice > RECLINER)
     {
         printf("Error: You can only select from 1, 2 or 3 category\n");
         return false;
     }
+    booking_details->ticket_category = (enum TicketCategory)category_choice;
     return true;
 }
 
@@ -93,13 +102,13 @@ void calculate_subtotal(struct Booking *booking_details)
     int ticket_price;
     switch(booking_details->ticket_category)
     {
-        case 1:
+        case STANDARD:
             ticket_price = standard_ticket_price;
             break;
-        case 2:
+        case PREMIUM:
             ticket_price = premium_ticket_price;
             break;
-        case 3:
+        case RECLINER:
             ticket_price = recliner_ticket_price;
             break;
         default:
@@ -131,11 +140,11 @@ const char* get_ticket_category(struct Booking *booking_details)
 
     switch(booking_details->ticket_category)
     {
-        case 1 :
+        case STANDARD :
             return "Standard";
-        case 2:
+        case PREMIUM:
             return "Premium";
-        case 3:
+        case RECLINER:
             return "Recliner";
     }
     return "Invalid category";
